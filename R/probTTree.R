@@ -25,7 +25,7 @@ probTTreeR = function(ttree,off.r,off.p,pi,w.shape,w.scale,ws.shape,ws.scale,dat
       d <- length(offspring)
       if (is.na(alphaStar[d+1])) {
         notinf=max(d,20)
-        alphaStar[d+1]=sum(choose(d:notinf,d)*dnbinom(d:notinf,off.r,off.p)*omegaStar^{0:(notinf-d)})#This is Equation (4)
+        alphaStar[d+1]=sum(choose(d:notinf,d)*dnbinom(d:notinf,off.r,1-off.p)*omegaStar^{0:(notinf-d)})#This is Equation (4)
         alphaStar[d+1]=log(alphaStar[d+1])
       }
       prob <- prob + alphaStar[d+1] #This is the third term in the product in Equation (7)
@@ -36,7 +36,7 @@ probTTreeR = function(ttree,off.r,off.p,pi,w.shape,w.scale,ws.shape,ws.scale,dat
     
   } else {
     #This is the case of an ongoing outbreak
-    dt=0.05;L=1000
+    dt=0.01;L=1000
     omegabar=getOmegabarR(L,dt,off.r,off.p,pi,w.shape,w.scale,ws.shape,ws.scale)
     #pit      =function(t) {pi*pgamma((dateT-t),shape=w.shape,scale=w.scale) }#This is Equation (6), but replaced with pi*trunc
     #fomega   =function(x) {omega   [max(1,min(L,round((dateT-x)/dt)))] }
@@ -50,7 +50,7 @@ probTTreeR = function(ttree,off.r,off.p,pi,w.shape,w.scale,ws.shape,ws.scale,dat
       offspring <- which(ttree[ ,3]==i)
       d <- length(offspring)
       notinf=max(20,d)
-      alpha=sum(choose(d:notinf,d)*dnbinom(d:notinf,off.r,off.p)*fomegabar(tinf)^{0:(notinf-d)}) #This is Equation (10)
+      alpha=sum(choose(d:notinf,d)*dnbinom(d:notinf,off.r,1-off.p)*fomegabar(tinf)^{0:(notinf-d)}) #This is Equation (10)
       prob <- prob + log(alpha) #This is the third term in the product in Equation (11)
       prob <- prob + sum(dgamma((ttree[offspring,1]-tinf),shape=w.shape,scale=w.scale,log=TRUE)-ltruncW)#This is the fourth term in the product in Equation (11)
     } 
@@ -66,7 +66,7 @@ getOmegabarR=function(L,dt,off.r,off.p,pi,w.shape,w.scale,ws.shape,ws.scale) {
   for (k in 1:(L-1)) {
     omegabar[k+1]=min(1,sum(coef[1:k]*dgammastore[seq(k,1,-1)]*omega[1:k]*dt)+1-pgamma(k*dt,shape=w.shape,scale=w.scale))
     omega[k+1]=(1-pi*pgamma(k*dt,shape=ws.shape,scale=ws.scale))*((1-off.p)/(1-off.p*omegabar[k+1]))^off.r #This is Equation (S3)
-    if (abs(omega[k+1]-omegaStar)/omegaStar<0.01) {omegabar[(k+2):L]=omegaStar;omega[(k+2):L]=omegaStar;break} 
+    if (abs(omega[k+1]-omegaStar)<0.01 || abs(omega[k+1]-omegaStar)<0.01/omegaStar) {omegabar[(k+2):L]=omegaStar;omega[(k+2):L]=omegaStar;break} 
     if (k==L-1) {warning('Convergence not reached')
       print(sprintf('omegaStar=%f,omegabar[L]=%f,w.shape=%f,w.scale=%f,pi=%f,off.r=%f,off.p=%f',omegaStar,omegabar[L],w.shape,w.scale,pi,off.r,off.p))}
   }
